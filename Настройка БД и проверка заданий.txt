@@ -1,0 +1,41 @@
+Настройка базы данных:
+---------------------
+
+1) Открыть psql или pgAdmin4, и создать тестовую базу данных 
+ 
+--DROP DATABASE IF EXISTS test;
+
+CREATE DATABASE test
+    WITH 
+    OWNER = test
+    ENCODING = 'UTF8'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1;
+
+2) Выполнить запросы из файла schema.sql
+3) Выполнить запросы из файла data.sql
+
+Задания:
+--------
+
+1) создать таблицу(-ы) для получения результата (Таблица (report) создана в schema.sql)
+
+2) Показать только записи тех работников у кого выполненых работ более 2х в день
+
+SELECT date AS Дата, fio AS Работник, task AS Что_сделал, time AS Во_сколько, 
+LEAD(time,1, 18) OVER (PARTITION BY employee_id, date ORDER BY time) - time AS Сколько_времени_затратил 
+FROM report
+INNER JOIN employee ON report.employee_id = employee.id
+INNER JOIN job ON report.job_id = job.id
+
+3) Посчитать длительность каждой работы, считая что начало следующей работы конец текущей (в часах)
+конец последней работы в 18
+
+SELECT date AS Дата, fio AS Работник, task AS Что_сделал, time AS Во_сколько FROM (
+	SELECT date, fio, task, time,
+	count(*) OVER (PARTITION BY employee_id, date) AS jobsCount
+	FROM report
+	INNER JOIN employee ON report.employee_id = employee.id
+	INNER JOIN job ON report.job_id = job.id
+) report
+WHERE jobsCount > 2
